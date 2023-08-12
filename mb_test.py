@@ -68,9 +68,13 @@ reportCnt = 0
 
 while True:
     try:
+        jsonout = dict()
+        jsonout['points'] = {'A':dict(),'B':dict(),'avg':dict(),'energy_fwd':dict(),'energy_rev':dict(),'energy_tot':dict()}
+
+
         start = time.time()
         nregs = 20
-        RMS_BLK = {'VA':'f','W':'f', 'VAR':'f','PF':'f','VLL':'f','VLN':'f','A':'f','HZ':'f','R1':'l','irq':'L'}
+        RMS_BLK = {'VA':'f','W':'f', 'VAR':'f','PF':'f','VLL':'f','VLN':'f','A':'f','HZ':'f','res':'l','res':'L'}
         statr_reg = 3000
         regs = instr.read_registers(statr_reg,nregs)
         avg_rms = registers_2_floats(regs,nregs/2, RMS_BLK)
@@ -83,14 +87,14 @@ while True:
         regs = instr.read_registers(statr_reg,nregs)
         phB_rms = registers_2_floats(regs,nregs/2, RMS_BLK)
         p = []
-        jsonout = {'A':dict(),'B':dict(),'avg':dict(),'energy':{'fwd':dict(),'rev':dict(),'tot':dict()}}
+        
         for field in RMS_BLK:
             p.append(influxdb_client.Point(field).tag("phase", "AVG").field('avg', avg_rms[field]))
             p.append(influxdb_client.Point(field).tag("phase", "A").field('ph_a', phA_rms[field]))
             p.append(influxdb_client.Point(field).tag("phase", "B").field('ph_b', phB_rms[field]))
-            jsonout['A'][field]=phA_rms[field]
-            jsonout['B'][field]=phB_rms[field]
-            jsonout['avg'][field]=avg_rms[field]
+            jsonout['points']['A'][field]=phA_rms[field]
+            jsonout['points']['B'][field]=phB_rms[field]
+            jsonout['points']['avg'][field]=avg_rms[field]
         
 
         POWER_QUALITY_BLK = {'V1THD':'f','V2THD':'f','V3THD':'f','A1THD':'f','A2THD':'f'}
@@ -103,15 +107,15 @@ while True:
         p.append(influxdb_client.Point("VTHD").tag("phase", "B").field('V2THD', p_qual['V2THD']))
         p.append(influxdb_client.Point("ATHD").tag("phase", "A").field('A1THD', p_qual['A1THD']))
         p.append(influxdb_client.Point("ATHD").tag("phase", "B").field('A2THD', p_qual['A2THD']))
-        jsonout['A']['V1THD']=p_qual['V1THD']
-        jsonout['B']['V2THD']=p_qual['V2THD']
-        jsonout['A']['A1THD']=p_qual['A1THD']
-        jsonout['B']['A2THD']=p_qual['A2THD']
+        jsonout['points']['A']['V1THD']=p_qual['V1THD']
+        jsonout['points']['B']['V2THD']=p_qual['V2THD']
+        jsonout['points']['A']['A1THD']=p_qual['A1THD']
+        jsonout['points']['B']['A2THD']=p_qual['A2THD']
 
                     
 
 
-        ENERGY_BLK = {'VAH':'f','WH':'f', 'VARHi':'f','R1':'l','R2':'l','VARHc':'f','R3':'l','R4':'l','R5':'l','Sec':'L'}
+        ENERGY_BLK = {'VAH':'f','WH':'f', 'VARHi':'f','res':'l','res':'l','VARHc':'f','res':'l','res':'l','res':'l','Sec':'L'}
         statr_reg = 3121
         nregs = 20
         regs = instr.read_registers(statr_reg,nregs)
@@ -132,11 +136,12 @@ while True:
             p.append(influxdb_client.Point(field).tag("energy", "fwd").field('fwd', fwd_int[field]))
             p.append(influxdb_client.Point(field).tag("energy", "rev").field('rev', rev_int[field]))
             p.append(influxdb_client.Point(field).tag("energy", "tot").field('tot', tot_int[field]))
-            jsonout['energy']['fwd'][field]=fwd_int[field]
-            jsonout['energy']['rev'][field]=rev_int[field]
-            jsonout['energy']['tot'][field]=tot_int[field]
+            jsonout['points']['energy_fwd'][field]=fwd_int[field]
+            jsonout['points']['energy_rev'][field]=rev_int[field]
+            jsonout['points']['energy_tot'][field]=tot_int[field]
         
         jsonout['time'] = time.time()
+        jsonout['mID'] = "bret"
             
                     
         dbwrite.write(bucket=bucket, org=org, record=p)
@@ -147,7 +152,7 @@ while True:
 
         print(f'{time.time()-start} - {reportCnt}')
         
-        if reportCnt > 10:
+        if reportCnt > 1:
 
             xmitrpts = {'data': reports}
             print(json.dumps(xmitrpts,indent=2))
