@@ -74,6 +74,7 @@ for readings in event['data']:
   point['MeasureValues'] = mValues
   point['MeasureValueType'] = 'MULTI'
   point['Time'] = str(int(readings['time']))
+  point['TimeUnit'] = 'SECONDS'
   records.append(point)
 
 print(records)
