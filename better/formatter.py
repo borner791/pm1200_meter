@@ -28,6 +28,9 @@ class refrmatter:
         for phase in pmpoints:
             for point in pmpoints[phase]:
                 self.jsonout['fields'] |= {f"{point}_{phase}":pmpoints[phase][point]}
+            
+    def get_inflx_pointewriter(self):
+        return self.jsonout
         
         
 
