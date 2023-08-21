@@ -1,5 +1,6 @@
 import json
 from datetime import datetime
+import time
 
 
 # https://influxdb-python.readthedocs.io/en/latest/examples.html
@@ -39,7 +40,7 @@ class influx_formatter:
     
 class aws_formatter:
     def __init__(self,meterid, pmpoints):
-        self.jsonout = {'points':dict(),'mID':meterid,'time':int(datetime.utcnow().timestamp())}
+        self.jsonout = {'points':dict(),'mID':meterid,'time':int(time.time())}
         for phase in pmpoints:
             for point in pmpoints[phase]:
                 self.jsonout['points'] |= {f"{point}_{phase}":pmpoints[phase][point]}
@@ -54,14 +55,7 @@ if __name__ == '__main__':
 
     print (meter_input)
 
-    fields = dict()
-    for phase in meter_input:
-        for point in meter_input[phase]:
-            fields |= {f"{point}_{phase}":meter_input[phase][point]}
 
-    print(fields)
-
-    print(datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'))
 
     forInflux = influx_formatter("powermeter",{'mid':'bret'},meter_input)
     print(forInflux.get_points())

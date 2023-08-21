@@ -38,7 +38,7 @@ dbclient = influxdb_client.InfluxDBClient(
 dbwrite = dbclient.write_api(write_options=SYNCHRONOUS)
 
 
-instr = minimalmodbus.Instrument('/dev/ttyUSB0',1,minimalmodbus.MODE_RTU,False,False)
+instr = minimalmodbus.Instrument('/dev/ttyUSB0',1,minimalmodbus.MODE_RTU,False,True)
 instr.serial.baudrate = 19200
 instr.serial.parity = minimalmodbus.serial.PARITY_EVEN
 instr.serial.stopbits = minimalmodbus.serial.STOPBITS_ONE

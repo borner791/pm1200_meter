@@ -17,7 +17,7 @@ class influxer(threading.Thread):
         self.measurement = measurement
         self.client = influxdb_client.InfluxDBClient(url=self.inflx_server,
                                                      token=self.inflx_token,
-                                                     org=self.inflx_org,debug=True)
+                                                     org=self.inflx_org)
         self.write_api = self.client.write_api(write_options=SYNCHRONOUS)
 
         self.BATCH_SIZE = batch_size
@@ -47,6 +47,7 @@ class influxer(threading.Thread):
         while self.runThread:
             self.batch.append(self.dataIn.get(block=True)) #Blocks until there is new data
             self.npoints += 1 # do it this way, so even on timeouts we count up and will try and send data if everything else is fucked.
+            print(f'influx points {self.npoints}')
             if self.npoints >= self.BATCH_SIZE:
                 self.npoints = 0
                 self.write_api.write(bucket=self.bucket,org=self.inflx_org,record=self.batch)
