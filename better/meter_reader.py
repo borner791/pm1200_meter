@@ -1,6 +1,7 @@
 import minimalmodbus
 import time
 import struct
+import json
 
 class meter_reader:
     RMS_BLK = {'VA':'f','W':'f', 'VAR':'f','PF':'f','VLL':'f','VLN':'f','A':'f','HZ':'f','res':'l','res':'L'}
@@ -18,6 +19,22 @@ class meter_reader:
     ENERGY_REV_BLK_START = 3151
     ENERGY_TOT_BLK_START = 3181
     N_ENERGY_REGS = 20
+    
+    CURRENTTOT_BLK = {'A_TOT':'f'}
+    CURRENTTOT_BLK_START = 3912
+    N_CURRENT_REGS = 2
+
+    CURRENT1_BLK = {'A1':'f'}
+    CURRENT1_BLK_START = 3928
+    N_CURRENT_REGS = 2
+
+    CURRENT2_BLK = {'A2':'f'}
+    CURRENT2_BLK_START = 3942
+    N_CURRENT_REGS = 2
+
+    CURRENT3_BLK = {'A3':'f'}
+    CURRENT3_BLK_START = 3956
+    N_CURRENT_REGS = 2
 
     def __init__(self, device, mbaddress, baud=19200,
                 parity=minimalmodbus.serial.PARITY_EVEN, 
@@ -70,6 +87,14 @@ class meter_reader:
         
         return self._format_register_block(regs, format)
     
+    def read_current_block(self):
+        meter_readings = {'tot':dict(),'1':dict(),'2':dict(),'3':dict()}
+        meter_readings['tot'] = self._read_register_block(self.CURRENTTOT_BLK_START, self.N_CURRENT_REGS, self.CURRENTTOT_BLK)
+        meter_readings['1'] = self._read_register_block(self.CURRENT1_BLK_START, self.N_RMS_REGS, self.CURRENT1_BLK)
+        meter_readings['2'] = self._read_register_block(self.CURRENT2_BLK_START, self.N_RMS_REGS, self.CURRENT2_BLK)
+        meter_readings['3'] = self._read_register_block(self.CURRENT3_BLK_START, self.N_RMS_REGS, self.CURRENT3_BLK)
+        return meter_readings
+    
     def read_rms_block(self):
         meter_readings = {'avg':dict(),'B':dict(),'A':dict()}
         meter_readings['avg'] = self._read_register_block(self.RMS_AVG_BLK_START, self.N_RMS_REGS, self.RMS_BLK)
@@ -113,8 +138,11 @@ if __name__ == '__main__':
         meter_readings |= pm1200.read_rms_block()
         meter_readings |= pm1200.read_quality_blk()
         meter_readings |= pm1200.read_energy_blk()
-        print(meter_readings)
+        print(json.dumps(meter_readings,indent=2))
+        current = pm1200.read_current_block()
+        print(json.dumps(current,indent=2))
+
 
         print(f'{time.time()-start} - {pm1200.connects}')
-        time.sleep(5)
+        time.sleep(1)
         

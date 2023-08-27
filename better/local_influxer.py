@@ -4,6 +4,7 @@ from meter_formatter import influx_formatter
 import time
 import threading
 import queue
+from systemd import journal
 
 
 
@@ -47,7 +48,7 @@ class influxer(threading.Thread):
         while self.runThread:
             self.batch.append(self.dataIn.get(block=True)) #Blocks until there is new data
             self.npoints += 1 # do it this way, so even on timeouts we count up and will try and send data if everything else is fucked.
-            print(f'influx points {self.npoints}')
+            journal.write(f'influx points {self.npoints}')
             if self.npoints >= self.BATCH_SIZE:
                 self.npoints = 0
                 self.write_api.write(bucket=self.bucket,org=self.inflx_org,record=self.batch)

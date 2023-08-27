@@ -4,6 +4,8 @@ import time
 import aws_mqtter
 import local_influxer
 
+from systemd import journal
+
 ##LOCAL INFLUX CONFIG
 influx_bucket = "pm1200_meter"
 influx_token = "yrNck4k72lMnsPTi-fWzI011YO2RGSo17nNsuysPbbedUgRQW8Oq-460HdKAX75iyLv46BTb4OW_BUAkXcPHwQ=="
@@ -15,9 +17,10 @@ influx_org = "bret tech"
 IoT_END_POINT = "a18080ddzg98lm-ats.iot.us-east-2.amazonaws.com"
 AWS_clientid = "pm_test1"
 IoT_topic = "pm/reading"
-AWS_Dev_cert = '/home/bret/dev/powermeter/aws_iot/1f586ed555d4792b75832c56dcb793a3cc5d50d873574ec87d56ffbd11987817-certificate.pem.crt'
-AWS_Dev_Key = '/home/bret/dev/powermeter/aws_iot/1f586ed555d4792b75832c56dcb793a3cc5d50d873574ec87d56ffbd11987817-private.pem.key'
-AWS_CA = '/home/bret/dev/powermeter/aws_iot/AmazonRootCA1.pem'
+IoT_topic = '$aws/rules/iot_2_timedb'
+AWS_Dev_cert = '/home/bret/powermeter/1f586ed555d4792b75832c56dcb793a3cc5d50d873574ec87d56ffbd11987817-certificate.pem.crt'
+AWS_Dev_Key = '/home/bret/powermeter/1f586ed555d4792b75832c56dcb793a3cc5d50d873574ec87d56ffbd11987817-private.pem.key'
+AWS_CA = '/home/bret/powermeter/AmazonRootCA1.pem'
 
 
 if __name__ == '__main__':
@@ -38,7 +41,7 @@ if __name__ == '__main__':
             localInflux.publish_data(meter_readings)
             aws.publish_data(meter_readings)
 
-            print(f'{time.time()-start} - {pm1200.connects}')
+            journal.write(f'{time.time()-start} - {pm1200.connects}')
             time.sleep(5)
         except KeyboardInterrupt:
             localInflux.quit()

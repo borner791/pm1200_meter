@@ -5,6 +5,7 @@ import time
 import threading
 import queue
 from meter_formatter import aws_formatter
+from systemd import journal
 
 class aws_ingestor(threading.Thread):
 
@@ -36,7 +37,7 @@ class aws_ingestor(threading.Thread):
     
         self.connect_future = self.mqtt_connection.connect()
         self.connect_future.result()
-        print("Connected!")
+        journal.write("Connected!")
 
         self.BATCH_SIZE = batch_size
         self.dataIn = queue.Queue(2* batch_size)
@@ -49,38 +50,38 @@ class aws_ingestor(threading.Thread):
 
     # Callback when connection is accidentally lost.
     def _on_connection_interrupted(self,connection, error, **kwargs):
-        print("Connection interrupted. error: {}".format(error))
+        journal.write("Connection interrupted. error: {}".format(error))
         self.connected = False
 
 
     # Callback when an interrupted connection is re-established.
     def _on_connection_resumed(self,connection, return_code, session_present, **kwargs):
-        print("Connection resumed. return_code: {} session_present: {}".format(return_code, session_present))
+        journal.write("Connection resumed. return_code: {} session_present: {}".format(return_code, session_present))
         self.connected = True
 
     def _on_resubscribe_complete(self,resubscribe_future):
         resubscribe_results = resubscribe_future.result()
-        print("Resubscribe results: {}".format(resubscribe_results))
+        journal.write("Resubscribe results: {}".format(resubscribe_results))
 
     # Callback when the subscribed topic receives a message
     def _on_message_received(self,topic, payload, dup, qos, retain, **kwargs):
-        print("Received message from topic '{}': {}".format(topic, payload))
+        journal.write("Received message from topic '{}': {}".format(topic, payload))
 
     # Callback when the connection successfully connects
     def _on_connection_success(self,connection, callback_data):
         assert isinstance(callback_data, mqtt.OnConnectionSuccessData)
-        print("Connection Successful with return code: {} session present: {}".format(callback_data.return_code, callback_data.session_present))
+        journal.write("Connection Successful with return code: {} session present: {}".format(callback_data.return_code, callback_data.session_present))
         self.connected = True
 
     # Callback when a connection attempt fails
     def _on_connection_failure(self,connection, callback_data):
         assert isinstance(callback_data, mqtt.OnConnectionFailuredata)
-        print("Connection failed with error code: {}".format(callback_data.error))
+        journal.write("Connection failed with error code: {}".format(callback_data.error))
         self.connected = False
 
     # Callback when a connection has been disconnected or shutdown successfully
     def _on_connection_closed(self,connection, callback_data):
-        print("Connection closed")
+        journal.write("Connection closed")
         self.connected = False
     
     def publish_data(self, payload):
@@ -98,10 +99,10 @@ class aws_ingestor(threading.Thread):
         while self.runThread:
             self.batch.append(self.dataIn.get(block=True)) #Blocks until there is new data
             self.npoints += 1 # do it this way, so even on timeouts we count up and will try and send data if everything else is fucked.
-            print(f'aws points {self.npoints}')
+            journal.write(f'aws points {self.npoints}')
             if self.npoints >= self.BATCH_SIZE:
                 report = {'data':self.batch}
-                print(report)
+                # journal.write(report)
                 if self.connected:
                     self.mqtt_connection.publish(
                             topic=self.topic,
@@ -134,7 +135,7 @@ if __name__ == '__main__':
 
     for i in range(5):
         ingestor.publish_data({'B': {'VLN': 120.0+(10*i), 'hz': 60.01, 'A': 9.999+i, 'VA': 101.0}, 'A': {'VLN': 121.1+(20*i), 'hz': 59.99, 'A': 12.1+(30*i), 'VA': 100.0}})        
-    print("Publishing message to topic '{}': {}".format(TOPIC, message))
+    journal.write("Publishing message to topic '{}': {}".format(TOPIC, message))
 
     
     time.sleep(10)

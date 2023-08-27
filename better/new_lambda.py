@@ -1,11 +1,15 @@
 import json
 import boto3
+import datetime
 
 def lambda_handler(event, context):
     
     client = boto3.client('timestream-write')
     
     records = []
+    
+    times = ''
+    
     for readings in event['data']:
         mValues = []
         point = dict()
@@ -20,8 +24,11 @@ def lambda_handler(event, context):
         point['Time'] = str(int(readings['time']))
         point['TimeUnit'] = 'SECONDS'
         records.append(point)
+        ts = datetime.datetime.fromtimestamp(int(readings['time']))
+        times += f'{ts.strftime("%Y-%m-%d %H:%M:%S")}, '
     try:
-        client.write_records(DatabaseName='pm_test1',TableName='meter',
+        print(f'RXed {len(event["data"])} points:\n{times}')
+        client.write_records(DatabaseName='power_meter',TableName='meter_readings',
                              Records = records)
     except client.exceptions.RejectedRecordsException as err:
         print("RejectedRecords: ", err)
