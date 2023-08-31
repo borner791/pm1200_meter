@@ -15,6 +15,7 @@ class aws_ingestor(threading.Thread):
         self.CID = clientID
         self.port = port
         self.connected = False
+        self.reconnectCtr = 0
         self.DeviceCert = certPath
         self.DeviceKey = privateKeyPath
         self.AWS_CA = CAPath
@@ -72,6 +73,7 @@ class aws_ingestor(threading.Thread):
         assert isinstance(callback_data, mqtt.OnConnectionSuccessData)
         journal.write("Connection Successful with return code: {} session present: {}".format(callback_data.return_code, callback_data.session_present))
         self.connected = True
+        self.reconnectCtr += 1 
 
     # Callback when a connection attempt fails
     def _on_connection_failure(self,connection, callback_data):
@@ -86,7 +88,8 @@ class aws_ingestor(threading.Thread):
     
     def publish_data(self, payload):
         formatted = aws_formatter(self.CID,payload)
-        self.dataIn.put_nowait(formatted.get_points())
+        if not self.dataIn.full():
+            self.dataIn.put_nowait(formatted.get_points())
         ###
         
     def quit(self):
@@ -99,7 +102,7 @@ class aws_ingestor(threading.Thread):
         while self.runThread:
             self.batch.append(self.dataIn.get(block=True)) #Blocks until there is new data
             self.npoints += 1 # do it this way, so even on timeouts we count up and will try and send data if everything else is fucked.
-            journal.write(f'aws points {self.npoints}')
+            journal.write(f'aws points {self.npoints} reconnects {self.reconnectCtr}')
             if self.npoints >= self.BATCH_SIZE:
                 report = {'data':self.batch}
                 # journal.write(report)

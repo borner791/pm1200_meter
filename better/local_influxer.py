@@ -9,7 +9,7 @@ from systemd import journal
 
 
 class influxer(threading.Thread):
-    def __init__(self, bucket, org, token, url, measurement, tags,batch_size=12):
+    def __init__(self, bucket, org, token, url, measurement, tags,batch_size=12, qdepth = 120):
         self.bucket = bucket
         self.inflx_org = org
         self.inflx_token = token
@@ -22,7 +22,7 @@ class influxer(threading.Thread):
         self.write_api = self.client.write_api(write_options=SYNCHRONOUS)
 
         self.BATCH_SIZE = batch_size
-        self.dataIn = queue.Queue(2* batch_size)
+        self.dataIn = queue.Queue(qdepth)
         self.npoints = 0
         self.batch = []
 
@@ -32,7 +32,8 @@ class influxer(threading.Thread):
 
     def publish_data(self, payload):
         formatted = influx_formatter(self.measurement,self.tags,payload)
-        self.dataIn.put_nowait(formatted.get_points())
+        if not self.dataIn.full():
+            self.dataIn.put_nowait(formatted.get_points())
         # self.write_api.write(bucket=self.bucket,org=self.inflx_org,record=payload)
 
 
