@@ -70,14 +70,14 @@ class aws_ingestor(threading.Thread):
 
     # Callback when the connection successfully connects
     def _on_connection_success(self,connection, callback_data):
-        assert isinstance(callback_data, mqtt.OnConnectionSuccessData)
+        # assert isinstance(callback_data, mqtt.OnConnectionSuccessData)
         journal.write("Connection Successful with return code: {} session present: {}".format(callback_data.return_code, callback_data.session_present))
         self.connected = True
         self.reconnectCtr += 1 
 
     # Callback when a connection attempt fails
     def _on_connection_failure(self,connection, callback_data):
-        assert isinstance(callback_data, mqtt.OnConnectionFailuredata)
+        # assert isinstance(callback_data, mqtt.OnConnectionFailuredata)
         journal.write("Connection failed with error code: {}".format(callback_data.error))
         self.connected = False
 
